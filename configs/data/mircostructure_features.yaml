@@ -1,0 +1,128 @@
+# Microstructure Feature Configuration
+# Features extracted from order-book and trade-flow data
+
+order_book:
+  # Order book imbalance features
+  imbalance:
+    enabled: true
+    levels: [1, 5, 10] # depth levels to compute imbalance
+    normalization: "zscore" # zscore, minmax, none
+    lookback_periods: [5, 10, 30] # in seconds
+
+  # Queue position and depth
+  queue:
+    enabled: true
+    metrics:
+      - queue_position
+      - relative_depth
+      - depth_imbalance
+      - microprice
+    levels: [1, 3, 5]
+
+  # Spread dynamics
+  spread:
+    enabled: true
+    metrics:
+      - bid_ask_spread
+      - effective_spread
+      - realized_spread
+      - spread_volatility
+    rolling_window: 60 # seconds
+
+trade_flow:
+  # Trade flow toxicity (VPIN-style)
+  toxicity:
+    enabled: true
+    metrics:
+      - vpin
+      - order_flow_imbalance
+      - trade_intensity
+      - volume_synchronized_probability
+    bucket_size: 50 # volume buckets
+    estimation_window: 50 # number of buckets
+
+  # Trade classification
+  classification:
+    enabled: true
+    method: "tick_rule" # tick_rule, quote_rule, lr_algorithm
+    signed_volume: true
+
+  # Volume metrics
+  volume:
+    enabled: true
+    metrics:
+      - cumulative_volume
+      - volume_rate
+      - buy_sell_ratio
+      - large_trade_indicator
+    threshold_percentile: 95 # for large trades
+
+volatility:
+  # Short-horizon realized volatility
+  realized_vol:
+    enabled: true
+    frequencies: [5, 10, 30, 60] # in seconds
+    methods:
+      - standard
+      - parkinson
+      - garman_klass
+      - rogers_satchell
+
+  # Intraday patterns
+  patterns:
+    enabled: true
+    features:
+      - intraday_seasonality
+      - volume_clock
+      - jump_indicators
+      - regime_probabilities
+
+liquidity:
+  # Liquidity shocks and measures
+  measures:
+    enabled: true
+    metrics:
+      - amihud_illiquidity
+      - roll_spread
+      - kyle_lambda
+      - liquidity_ratio
+    shock_detection: true
+    rolling_window: 300 # seconds
+
+preprocessing:
+  # Feature preprocessing
+  missing_values: "forward_fill" # forward_fill, interpolate, drop
+  outlier_treatment:
+    enabled: true
+    method: "winsorize" # winsorize, clip, remove
+    percentiles: [1, 99]
+
+  # Feature engineering
+  transformations:
+    - log_transform
+    - differencing
+    - standardization
+
+  # Lag features
+  lags:
+    enabled: true
+    periods: [1, 5, 10, 30] # in data points
+
+  # Rolling statistics
+  rolling_stats:
+    enabled: true
+    windows: [10, 30, 60] # in data points
+    stats: ["mean", "std", "min", "max", "skew"]
+
+# Feature selection
+feature_selection:
+  enabled: false
+  method: "mutual_information" # mutual_information, recursive_elimination, lasso
+  top_k: 50
+  correlation_threshold: 0.95 # remove highly correlated features
+
+# Data quality
+quality_checks:
+  min_data_points: 100
+  max_missing_ratio: 0.1
+  staleness_threshold: 300 # seconds

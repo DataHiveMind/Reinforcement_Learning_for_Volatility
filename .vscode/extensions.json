@@ -1,0 +1,85 @@
+{
+  "recommendations": [
+    // Python
+    "ms-python.python",
+    "ms-python.vscode-pylance",
+    "ms-python.black-formatter",
+    "ms-python.isort",
+    "ms-python.debugpy",
+    
+    // Testing
+    "littlefoxteam.vscode-python-test-adapter",
+    "hbenl.vscode-test-explorer",
+    
+    // Jupyter
+    "ms-toolsai.jupyter",
+    "ms-toolsai.jupyter-keymap",
+    "ms-toolsai.jupyter-renderers",
+    "ms-toolsai.vscode-jupyter-cell-tags",
+    "ms-toolsai.vscode-jupyter-slideshow",
+    
+    // Data Science & ML
+    "mechatroner.rainbow-csv",
+    "randomfractalsinc.vscode-data-preview",
+    
+    // YAML
+    "redhat.vscode-yaml",
+    
+    // Git
+    "eamodio.gitlens",
+    "donjayamanne.githistory",
+    "mhutchie.git-graph",
+    
+    // Code Quality
+    "ms-python.flake8",
+    "ms-python.mypy-type-checker",
+    "charliermarsh.ruff",
+    
+    // Formatting & Productivity
+    "editorconfig.editorconfig",
+    "streetsidesoftware.code-spell-checker",
+    "usernamehw.errorlens",
+    "gruntfuggly.todo-tree",
+    
+    // Documentation
+    "njpwerner.autodocstring",
+    "davidanson.vscode-markdownlint",
+    "yzhang.markdown-all-in-one",
+    
+    // Docker (if using containers)
+    "ms-azuretools.vscode-docker",
+    
+    // Remote Development
+    "ms-vscode-remote.remote-containers",
+    "ms-vscode-remote.remote-ssh",
+    
+    // Utilities
+    "christian-kohler.path-intellisense",
+    "visualstudioexptteam.vscodeintellicode",
+    "visualstudioexptteam.intellicode-api-usage-examples",
+    
+    // Coverage
+    "ryanluker.vscode-coverage-gutters",
+    
+    // TOML
+    "tamasfe.even-better-toml",
+    
+    // REST Client (for API testing)
+    "humao.rest-client",
+    
+    // Environment Variables
+    "mikestead.dotenv",
+    
+    // Better Comments
+    "aaron-bond.better-comments",
+    
+    // Bracket Colorizer
+    "2gua.rainbow-brackets",
+    
+    // File Icons
+    "vscode-icons-team.vscode-icons"
+  ],
+  "unwantedRecommendations": [
+    "ms-python.autopep8"
+  ]
+}

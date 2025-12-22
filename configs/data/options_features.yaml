@@ -1,0 +1,180 @@
+# Options-Implied Volatility Features Configuration
+# Features extracted from options market data
+
+implied_volatility:
+  # IV surface features
+  surface:
+    enabled: true
+    maturities: [7, 14, 30, 60, 90] # days to expiration
+    moneyness_range: [0.8, 1.2] # strike/spot ratio
+    moneyness_points: 11
+
+  # IV skew
+  skew:
+    enabled: true
+    metrics:
+      - put_call_skew
+      - risk_reversal # 25-delta
+      - butterfly_spread # 25-delta
+      - skew_slope
+      - skew_curvature
+    maturities: [30, 60, 90]
+
+  # Term structure
+  term_structure:
+    enabled: true
+    metrics:
+      - term_slope # short vs long tenor
+      - term_curvature
+      - atm_term_spread
+      - term_structure_pca
+    reference_strikes: ["atm", "otm_10", "itm_10"]
+
+volatility_of_volatility:
+  # Vol-of-vol metrics
+  enabled: true
+  metrics:
+    - historical_iv_vol
+    - implied_vol_vol # from variance swaps if available
+    - vvix_proxy
+  estimation:
+    window: 30 # days
+    method: "realized_iv" # realized_iv, garch, stochastic_vol
+
+smile:
+  # Volatility smile characteristics
+  enabled: true
+  metrics:
+    - smile_symmetry
+    - smile_curvature
+    - smirk_indicator
+    - smile_width
+    - wing_spread
+  moneyness_range: [0.7, 1.3]
+  fit_method: "svi" # svi, sabr, polynomial
+
+greeks:
+  # Options Greeks aggregated metrics
+  enabled: true
+  metrics:
+    - total_gamma_exposure
+    - total_vanna_exposure
+    - total_vomma_exposure
+    - dealer_positioning # estimated
+    - gamma_imbalance
+    - charm_decay
+  calculation:
+    model: "black_scholes" # black_scholes, heston
+    aggregation: "dollar_weighted" # dollar_weighted, vega_weighted
+
+realized_vs_implied:
+  # Spread between realized and implied vol
+  enabled: true
+  metrics:
+    - vol_risk_premium
+    - realized_implied_spread
+    - forecast_error
+    - variance_risk_premium
+  horizons: [7, 14, 30] # days
+  realized_estimator: "close_to_close" # close_to_close, parkinson, garman_klass
+
+options_flow:
+  # Options order flow and volume
+  enabled: true
+  metrics:
+    - put_call_ratio_volume
+    - put_call_ratio_oi
+    - call_skew_flow
+    - put_skew_flow
+    - net_premium
+    - unusual_activity
+  volume_aggregation: "dollar_volume"
+  detection_threshold: 2.0 # standard deviations for unusual activity
+
+implied_distributions:
+  # Risk-neutral density estimation
+  enabled: true
+  metrics:
+    - implied_skewness
+    - implied_kurtosis
+    - tail_risk_measure
+    - crash_probability # prob of large moves
+  estimation_method: "breeden_litzenberger"
+  strike_spacing: 0.01 # for numerical differentiation
+
+cross_asset:
+  # Cross-asset volatility relationships
+  enabled: false
+  correlations:
+    - equity_fx_vol
+    - equity_rates_vol
+    - sector_vol_dispersion
+  estimation_window: 60 # days
+
+event_features:
+  # Event-driven volatility features
+  enabled: true
+  events:
+    - earnings_announcement
+    - fomc_meeting
+    - economic_release
+    - dividend_ex_date
+  features:
+    - event_proximity # days until event
+    - pre_event_vol_jump
+    - event_vol_premium
+    - post_event_vol_decay
+
+preprocessing:
+  # Feature preprocessing
+  interpolation:
+    enabled: true
+    method: "cubic_spline" # for IV surface
+
+  smoothing:
+    enabled: true
+    method: "savgol" # savitzky_golay filter
+    window: 5
+
+  outlier_treatment:
+    enabled: true
+    method: "winsorize"
+    percentiles: [1, 99]
+
+  normalization:
+    method: "rolling_zscore"
+    window: 60 # days
+
+# Feature engineering
+feature_engineering:
+  # Interaction features
+  interactions:
+    enabled: true
+    pairs:
+      - ["skew", "vol_of_vol"]
+      - ["term_structure", "realized_implied_spread"]
+      - ["gamma_exposure", "vol_risk_premium"]
+
+  # Time-based features
+  temporal:
+    enabled: true
+    features:
+      - time_to_expiry_bucket
+      - weekend_effect
+      - month_end_effect
+      - quad_witching
+
+  # Derived features
+  derived:
+    enabled: true
+    features:
+      - skew_momentum
+      - vol_regime_indicator
+      - surface_twist
+
+# Data quality
+quality_checks:
+  iv_bounds: [0.01, 2.0] # reasonable IV range
+  price_arbitrage: true # check for arbitrage violations
+  monotonicity: true # calendar spread monotonicity
+  min_liquidity: 10 # minimum open interest

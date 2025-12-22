@@ -1,0 +1,227 @@
+# Volatility Environment Configuration
+# Custom RL environment for volatility strategy allocation
+
+environment:
+  name: "VolatilityTradingEnv"
+  version: "v1.0"
+  type: "continuous" # continuous action space for allocation weights
+
+state_space:
+  # State representation
+  components:
+    microstructure:
+      enabled: true
+      features: "configs/data/mircostructure_features.yaml"
+      dimension: 50 # estimated
+
+    options:
+      enabled: true
+      features: "configs/data/options_features.yaml"
+      dimension: 40 # estimated
+
+    unstructured:
+      enabled: false # enable when NLP features ready
+      dimension: 20
+
+    market:
+      enabled: true
+      features:
+        - realized_volatility
+        - historical_returns
+        - market_regime
+        - time_of_day
+        - day_of_week
+      dimension: 10
+
+    portfolio:
+      enabled: true
+      features:
+        - current_positions
+        - cash_balance
+        - realized_pnl
+        - unrealized_pnl
+        - position_age
+      dimension: 15
+
+  # State processing
+  normalization: "rolling_zscore"
+  normalization_window: 252 # trading days
+  clip_range: [-5, 5]
+
+  # Lookback window
+  history_length: 20 # timesteps to include
+  use_lstm_state: false # if true, pass sequential state
+
+action_space:
+  # Action definition: allocation weights to volatility strategies
+  type: "Box" # continuous
+
+  strategies:
+    - skew_trading # long/short volatility skew
+    - convexity # gamma trading
+    - dispersion # index vs single-stock vol
+    - vol_carry # short-term vs long-term vol
+    - breakout # directional vol breakout
+
+  num_strategies: 5
+
+  # Action bounds
+  allocation_bounds: [-1.0, 1.0] # allow long/short
+  leverage_constraint: 2.0 # max total leverage
+
+  # Position constraints
+  max_position_size: 0.5 # max allocation per strategy
+  min_position_change: 0.01 # minimum trade size
+
+  # Action processing
+  action_scaling: "tanh" # map network output to bounds
+  discretization: null # null for continuous
+
+rewards:
+  # Reward function specification
+  primary_objective: "risk_adjusted_pnl" # risk_adjusted_pnl, sharpe, sortino
+
+  components:
+    # PnL component
+    pnl:
+      weight: 1.0
+      scale: 10000 # scale to reasonable range
+
+    # Risk penalty
+    risk:
+      weight: -0.5
+      metric: "volatility" # volatility, var, cvar
+      target_vol: 0.15 # annualized
+
+    # Transaction costs
+    costs:
+      weight: -1.0
+      bid_ask_spread: 0.001 # 10 bps
+      slippage_model: "linear" # linear, sqrt
+
+    # Turnover penalty
+    turnover:
+      weight: -0.1
+      threshold: 0.5 # penalize high turnover
+
+    # Breakout detection bonus
+    breakout_bonus:
+      weight: 2.0
+      threshold: 2.0 # standard deviations
+      lead_time: 5 # timesteps ahead
+
+    # Drawdown penalty
+    drawdown:
+      weight: -0.3
+      method: "max_drawdown"
+
+  # Reward shaping
+  reward_scaling: 0.1
+  clip_rewards: true
+  clip_range: [-10, 10]
+
+  # Multi-objective (optional)
+  multi_objective:
+    enabled: false
+    objectives: ["sharpe", "breakout_detection", "turnover"]
+    weights: [0.6, 0.3, 0.1]
+
+dynamics:
+  # Episode settings
+  episode_length: 252 # trading days (1 year)
+  timestep: "1H" # 1 hour bars
+  trading_hours: [9.5, 16.0] # 9:30 AM to 4:00 PM
+
+  # Initial conditions
+  initial_capital: 1000000 # $1M
+  initial_position: "random" # random, zero, neutral
+
+  # Market simulation
+  slippage_model:
+    type: "proportional"
+    rate: 0.0005 # 5 bps
+
+  transaction_costs:
+    commission: 0.0001 # 1 bp
+    market_impact: "sqrt" # square-root model
+    impact_coefficient: 0.1
+
+  # Constraints
+  margin_requirement: 0.3
+  margin_call_threshold: 0.2
+  liquidation_penalty: 0.1
+
+termination:
+  # Episode termination conditions
+  max_steps: 1500 # max timesteps per episode
+
+  bankruptcy:
+    enabled: true
+    threshold: 0.1 # 90% loss triggers bankruptcy
+
+  margin_call:
+    enabled: true
+    liquidate_on_call: true
+
+  performance:
+    enabled: false
+    min_sharpe: -1.0 # terminate if Sharpe too low
+
+  early_stopping:
+    enabled: false
+    patience: 100 # timesteps
+
+observations:
+  # Observation processing
+  include_portfolio_state: true
+  include_time_features: true
+  include_regime_indicator: true
+
+  # Feature stacking
+  stack_frames: 1 # number of frames to stack
+
+  # Noise injection (for robustness)
+  add_noise:
+    enabled: false
+    std: 0.01
+
+info:
+  # Information returned at each step
+  metrics:
+    - sharpe_ratio
+    - sortino_ratio
+    - max_drawdown
+    - win_rate
+    - profit_factor
+    - volatility_forecast_accuracy
+    - breakout_detection_recall
+    - turnover
+    - total_return
+
+  # Logging
+  log_frequency: 10 # timesteps
+  save_trajectories: true
+
+validation:
+  # Environment validation
+  check_state_bounds: true
+  check_action_bounds: true
+  check_reward_finite: true
+  verbose: false
+
+# Data configuration
+data:
+  train_start: "2018-01-01"
+  train_end: "2022-12-31"
+  val_start: "2023-01-01"
+  val_end: "2023-06-30"
+  test_start: "2023-07-01"
+  test_end: "2024-12-31"
+
+  # Data source
+  source: "processed" # raw, processed, external
+  path: "data/processed/"
+
+  # Resampling
+  resample_method: "business_days"
+  handle_missing: "forward_fill"

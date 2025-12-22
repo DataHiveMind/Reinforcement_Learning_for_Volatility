@@ -1,0 +1,233 @@
+# PPO Training Configuration for Microstructure Features
+# Proximal Policy Optimization with market microstructure signals
+
+experiment:
+  name: "ppo_microstructure_v1"
+  description: "PPO agent using order-book and trade-flow features for volatility allocation"
+  tags: ["ppo", "microstructure", "volatility"]
+  output_dir: "experiments/ppo_microstructure/"
+
+# Import base hyperparameters
+base_config: "configs/trainings/hyperparams.yaml"
+
+# Algorithm
+algorithm:
+  type: "PPO"
+  policy_type: "MlpPolicy" # MlpPolicy, LstmPolicy, MultiInputPolicy
+
+# Environment
+environment:
+  config: "configs/env/volatility_env.yaml"
+  n_envs: 8 # parallel environments
+  vec_env_type: "subproc" # dummy, subproc
+
+  # Environment wrappers
+  wrappers:
+    - type: "NormalizeObservation"
+      enabled: true
+    - type: "NormalizeReward"
+      enabled: true
+      gamma: 0.99
+    - type: "TimeFeatureWrapper"
+      enabled: true
+    - type: "RecordEpisodeStatistics"
+      enabled: true
+
+# Feature configuration
+features:
+  microstructure:
+    enabled: true
+    config: "configs/data/mircostructure_features.yaml"
+
+  options:
+    enabled: false # focus on microstructure only
+
+  unstructured:
+    enabled: false
+
+  # Feature preprocessing
+  preprocessing:
+    scaler: "robust" # robust, standard, minmax
+    handle_nan: "forward_fill"
+    outlier_clip: 3.0 # standard deviations
+
+# PPO Hyperparameters (override base config)
+ppo:
+  learning_rate: 3.0e-4
+  n_steps: 2048
+  batch_size: 64
+  n_epochs: 10
+  gamma: 0.99
+  gae_lambda: 0.95
+  clip_range: 0.2
+  clip_range_vf: null
+  ent_coef: 0.01 # encourage exploration
+  vf_coef: 0.5
+  max_grad_norm: 0.5
+  target_kl: 0.01
+  normalize_advantage: true
+  use_sde: false
+  sde_sample_freq: -1
+
+# Network architecture
+network:
+  policy_network:
+    net_arch:
+      - type: "mlp"
+        pi: [256, 256] # actor layers
+        vf: [256, 256] # critic layers
+    activation_fn: "tanh"
+    ortho_init: true
+
+  # Advanced options
+  squash_output: true
+  log_std_init: 0.0
+  full_std: true
+  use_expln: false
+
+# Training schedule
+training:
+  total_timesteps: 1000000
+
+  # Learning rate schedule
+  lr_schedule:
+    type: "linear" # anneal learning rate
+    initial: 3.0e-4
+    final: 1.0e-5
+
+  # Curriculum (optional)
+  curriculum:
+    enabled: false
+
+# Evaluation
+evaluation:
+  enabled: true
+  n_eval_episodes: 10
+  eval_freq: 10000 # timesteps
+  deterministic: true
+  render: false
+
+  # Evaluation environment
+  separate_eval_env: true
+  eval_env_config:
+    # Use validation data
+    data_split: "validation"
+
+# Callbacks
+callbacks:
+  # Checkpoint saving
+  checkpoint:
+    enabled: true
+    save_freq: 50000
+    save_path: "checkpoints/"
+    name_prefix: "ppo_microstructure"
+    save_replay_buffer: false
+    save_vecnormalize: true
+
+  # Evaluation callback
+  eval_callback:
+    enabled: true
+    best_model_save_path: "best_model/"
+    log_path: "eval_logs/"
+    deterministic: true
+    render: false
+
+  # Early stopping
+  early_stopping:
+    enabled: true
+    patience: 20
+    min_delta: 0.01
+    metric: "eval/mean_reward"
+    verbose: 1
+
+  # Tensorboard
+  tensorboard:
+    enabled: true
+    log_dir: "logs/tensorboard/"
+
+  # Custom metrics
+  custom_metrics:
+    enabled: true
+    metrics:
+      - sharpe_ratio
+      - max_drawdown
+      - win_rate
+      - turnover
+      - volatility_forecast_mae
+    log_freq: 1000
+
+# Logging
+logging:
+  verbose: 1
+  log_interval: 10 # episodes
+
+  # Wandb integration
+  wandb:
+    enabled: false
+    project: "rl-volatility-alpha"
+    entity: null
+    name: "ppo_microstructure_v1"
+    tags: ["ppo", "microstructure"]
+    notes: "PPO with microstructure features only"
+
+  # MLflow
+  mlflow:
+    enabled: false
+    experiment_name: "volatility_trading"
+    run_name: "ppo_microstructure_v1"
+
+# Reproducibility
+reproducibility:
+  seed: 42
+  deterministic_pytorch: false
+  benchmark: true
+
+# Performance optimization
+performance:
+  # Mixed precision training
+  mixed_precision:
+    enabled: false
+
+  # Gradient accumulation
+  gradient_accumulation:
+    enabled: false
+    steps: 1
+
+  # Compilation (PyTorch 2.0+)
+  compile:
+    enabled: false
+    mode: "default"
+
+# Debugging
+debug:
+  enabled: false
+  check_finite: true
+  profile: false
+  detect_anomaly: false
+
+# Model export
+export:
+  # Export trained model
+  enabled: true
+  format: "onnx" # onnx, torchscript
+  path: "models/exported/"
+
+# Post-training analysis
+analysis:
+  enabled: true
+
+  # Backtest on test set
+  backtest:
+    enabled: true
+    data_split: "test"
+    save_results: true
+
+  # Feature importance
+  feature_importance:
+    enabled: true
+    method: "permutation" # permutation, shap
+
+  # Policy visualization
+  policy_viz:
+    enabled: true
+    num_episodes: 5

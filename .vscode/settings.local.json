@@ -1,0 +1,6 @@
+{
+  "python.defaultInterpreterPath": "/opt/conda/envs/rl-volatility/bin/python",
+  "python.terminal.activateEnvironment": true,
+  "jupyter.kernels.trusted": ["rl-volatility"],
+  "jupyter.jupyterServerType": "local"
+}

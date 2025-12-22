@@ -1,0 +1,244 @@
+{
+  // See https://go.microsoft.com/fwlink/?LinkId=733558
+  // for the documentation about the tasks.json format
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Install Dependencies",
+      "type": "shell",
+      "command": "pip install -e '.[all]'",
+      "group": "build",
+      "presentation": {
+        "reveal": "always",
+        "panel": "new"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Run Tests",
+      "type": "shell",
+      "command": "pytest tests/ -v --cov=src --cov-report=html",
+      "group": {
+        "kind": "test",
+        "isDefault": true
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Run Tests (Fast)",
+      "type": "shell",
+      "command": "pytest tests/ -v -m 'not slow'",
+      "group": "test",
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Format Code (Black)",
+      "type": "shell",
+      "command": "black src/ tests/ --line-length=100",
+      "group": "build",
+      "presentation": {
+        "reveal": "silent"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Sort Imports (isort)",
+      "type": "shell",
+      "command": "isort src/ tests/ --profile=black --line-length=100",
+      "group": "build",
+      "presentation": {
+        "reveal": "silent"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Lint Code (flake8)",
+      "type": "shell",
+      "command": "flake8 src/ tests/ --max-line-length=100 --extend-ignore=E203,W503",
+      "group": "build",
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Type Check (mypy)",
+      "type": "shell",
+      "command": "mypy src/ --config-file pyproject.toml",
+      "group": "build",
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Format & Lint All",
+      "dependsOn": [
+        "Format Code (Black)",
+        "Sort Imports (isort)",
+        "Lint Code (flake8)",
+        "Type Check (mypy)"
+      ],
+      "group": "build",
+      "problemMatcher": []
+    },
+    {
+      "label": "Train PPO Microstructure",
+      "type": "shell",
+      "command": "python src/training/train.py --config configs/trainings/ppo_mircostructure.yaml --env-config configs/env/volatility_env.yaml",
+      "group": "build",
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Train DDPG Microstructure",
+      "type": "shell",
+      "command": "python src/training/train.py --config configs/trainings/ddpg_microstructure.yaml --env-config configs/env/volatility_env.yaml",
+      "group": "build",
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Evaluate Model",
+      "type": "shell",
+      "command": "python src/training/evaluate.py --model-path ${input:modelPath} --env-config configs/env/volatility_env.yaml",
+      "group": "build",
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Backtest Model",
+      "type": "shell",
+      "command": "python src/training/backtest.py --model-path ${input:modelPath} --env-config configs/env/volatility_env.yaml",
+      "group": "build",
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Feature Engineering",
+      "type": "shell",
+      "command": "python src/data/feature_engineering.py --config configs/data/mircostructure_features.yaml",
+      "group": "build",
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Start MLflow UI",
+      "type": "shell",
+      "command": "mlflow ui --backend-store-uri sqlite:///mlflow.db --default-artifact-root ./mlruns --host 0.0.0.0 --port 5000",
+      "isBackground": true,
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Start TensorBoard",
+      "type": "shell",
+      "command": "tensorboard --logdir experiments/ --port 6006 --bind_all",
+      "isBackground": true,
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Clean Build Artifacts",
+      "type": "shell",
+      "command": "find . -type d -name '__pycache__' -exec rm -rf {} + 2>/dev/null; find . -type d -name '*.egg-info' -exec rm -rf {} + 2>/dev/null; find . -type d -name '.pytest_cache' -exec rm -rf {} + 2>/dev/null; find . -type d -name '.mypy_cache' -exec rm -rf {} + 2>/dev/null; find . -name '*.pyc' -delete 2>/dev/null; rm -rf build/ dist/ htmlcov/ .coverage; echo 'Cleaned all build artifacts'",
+      "group": "build",
+      "presentation": {
+        "reveal": "always"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Generate Coverage Report",
+      "type": "shell",
+      "command": "pytest tests/ --cov=src --cov-report=html --cov-report=term && python -m webbrowser htmlcov/index.html",
+      "group": "test",
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Create Virtual Environment",
+      "type": "shell",
+      "command": "python -m venv .venv && echo 'Virtual environment created. Activate it with: source .venv/bin/activate'",
+      "group": "build",
+      "presentation": {
+        "reveal": "always"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Jupyter Lab",
+      "type": "shell",
+      "command": "jupyter lab --ip=0.0.0.0 --port=8888 --no-browser --allow-root",
+      "isBackground": true,
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Pre-commit Install",
+      "type": "shell",
+      "command": "pre-commit install",
+      "group": "build",
+      "presentation": {
+        "reveal": "always"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Pre-commit Run All",
+      "type": "shell",
+      "command": "pre-commit run --all-files",
+      "group": "build",
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared"
+      },
+      "problemMatcher": []
+    }
+  ],
+  "inputs": [
+    {
+      "id": "modelPath",
+      "type": "promptString",
+      "description": "Enter the path to the model checkpoint",
+      "default": "experiments/ppo_microstructure/best_model/"
+    }
+  ]
+}

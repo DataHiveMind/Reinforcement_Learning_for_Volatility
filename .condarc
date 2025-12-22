@@ -1,0 +1,12 @@
+channels:
+  - conda-forge
+  - defaults
+
+channel_priority: flexible
+
+always_yes: false
+
+show_channel_urls: true
+
+conda-build:
+  anaconda_upload: false

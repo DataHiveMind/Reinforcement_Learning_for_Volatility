@@ -1,0 +1,272 @@
+# Hyperparameter Configuration
+# Shared hyperparameters and search spaces for RL agents
+
+# General training settings
+general:
+  seed: 42
+  device: "cuda" # cuda, cpu, mps
+  num_workers: 4
+  deterministic: false
+
+# PPO Hyperparameters
+ppo:
+  # Learning rates
+  learning_rate: 3.0e-4
+  actor_lr: 3.0e-4
+  critic_lr: 3.0e-4
+  lr_schedule: "linear" # constant, linear, exponential
+
+  # Training steps
+  total_timesteps: 1000000
+  n_steps: 2048 # steps per rollout
+  batch_size: 64
+  n_epochs: 10 # epochs per update
+
+  # PPO specific
+  gamma: 0.99 # discount factor
+  gae_lambda: 0.95 # GAE parameter
+  clip_range: 0.2 # PPO clip parameter
+  clip_range_vf: null # value function clip (null = no clip)
+  ent_coef: 0.01 # entropy coefficient
+  vf_coef: 0.5 # value function coefficient
+  max_grad_norm: 0.5 # gradient clipping
+
+  # Target KL (early stopping)
+  target_kl: 0.01
+
+  # Normalization
+  normalize_advantage: true
+  use_sde: false # State Dependent Exploration
+
+# DDPG Hyperparameters
+ddpg:
+  # Learning rates
+  actor_lr: 1.0e-4
+  critic_lr: 1.0e-3
+  lr_schedule: "constant"
+
+  # Training steps
+  total_timesteps: 1000000
+  buffer_size: 1000000 # replay buffer
+  learning_starts: 10000 # random actions before learning
+  batch_size: 256
+  train_freq: 1 # update every N steps
+  gradient_steps: 1 # gradients per update
+
+  # DDPG specific
+  gamma: 0.99
+  tau: 0.005 # soft update coefficient
+
+  # Exploration noise
+  noise_type: "ornstein_uhlenbeck" # ornstein_uhlenbeck, normal
+  noise_std: 0.1
+  noise_clip: 0.5
+
+  # Critic regularization
+  critic_l2_reg: 0.01
+
+# SAC Hyperparameters (optional)
+sac:
+  learning_rate: 3.0e-4
+  buffer_size: 1000000
+  learning_starts: 10000
+  batch_size: 256
+  tau: 0.005
+  gamma: 0.99
+  train_freq: 1
+  gradient_steps: 1
+
+  # SAC specific
+  ent_coef: "auto" # auto, or float
+  target_update_interval: 1
+  target_entropy: "auto"
+
+# TD3 Hyperparameters (optional)
+td3:
+  learning_rate: 1.0e-3
+  buffer_size: 1000000
+  learning_starts: 10000
+  batch_size: 256
+  tau: 0.005
+  gamma: 0.99
+  train_freq: 1
+  gradient_steps: 1
+
+  # TD3 specific
+  policy_delay: 2 # update actor every N critic updates
+  target_policy_noise: 0.2
+  target_noise_clip: 0.5
+
+# Network architecture
+network:
+  # Actor network
+  actor:
+    hidden_sizes: [256, 256]
+    activation: "relu" # relu, tanh, elu
+    output_activation: "tanh"
+    dropout: 0.0
+    batch_norm: false
+    layer_norm: false
+
+  # Critic network
+  critic:
+    hidden_sizes: [256, 256]
+    activation: "relu"
+    dropout: 0.0
+    batch_norm: false
+    layer_norm: false
+
+  # Shared features (if applicable)
+  shared_network:
+    enabled: false
+    hidden_sizes: [128, 128]
+
+  # Initialization
+  weight_init: "orthogonal" # orthogonal, xavier, kaiming
+  bias_init: "zeros"
+
+# Feature extraction
+feature_extractor:
+  # Type of feature extractor
+  type: "mlp" # mlp, cnn, lstm, transformer
+
+  # MLP specific
+  mlp:
+    hidden_sizes: [128, 128]
+    activation: "relu"
+
+  # LSTM specific (for sequential data)
+  lstm:
+    hidden_size: 128
+    num_layers: 2
+    dropout: 0.1
+    bidirectional: false
+
+  # Attention/Transformer
+  transformer:
+    num_heads: 4
+    num_layers: 2
+    d_model: 128
+    dropout: 0.1
+
+# Regularization
+regularization:
+  l2_reg: 0.0001
+  dropout: 0.0
+  gradient_clip: 0.5
+  noise_injection:
+    enabled: false
+    std: 0.01
+
+# Optimization
+optimization:
+  optimizer: "adam" # adam, adamw, rmsprop, sgd
+  adam_eps: 1.0e-5
+  weight_decay: 0.0
+
+  # Learning rate scheduling
+  lr_scheduler:
+    enabled: false
+    type: "step" # step, exponential, cosine
+    step_size: 100000
+    gamma: 0.1
+
+# Exploration strategies
+exploration:
+  # Epsilon-greedy (for discrete actions)
+  epsilon_greedy:
+    initial: 1.0
+    final: 0.05
+    decay_steps: 100000
+
+  # Noise-based exploration (continuous)
+  action_noise:
+    type: "ornstein_uhlenbeck"
+    theta: 0.15
+    sigma: 0.2
+    dt: 0.01
+
+  # Entropy regularization
+  entropy:
+    coefficient: 0.01
+    decay: "linear"
+
+# Experience replay
+replay_buffer:
+  type: "uniform" # uniform, prioritized
+
+  # Prioritized experience replay
+  prioritized:
+    alpha: 0.6 # prioritization exponent
+    beta_start: 0.4
+    beta_end: 1.0
+    beta_steps: 1000000
+    epsilon: 1.0e-6
+
+# Curriculum learning
+curriculum:
+  enabled: false
+  stages:
+    - name: "easy"
+      timesteps: 100000
+      difficulty: 0.3
+    - name: "medium"
+      timesteps: 300000
+      difficulty: 0.6
+    - name: "hard"
+      timesteps: 600000
+      difficulty: 1.0
+
+# Multi-task learning
+multitask:
+  enabled: false
+  tasks: ["volatility_prediction", "breakout_detection", "allocation"]
+  task_weights: [0.4, 0.3, 0.3]
+
+# Hyperparameter search space (for tuning)
+search_space:
+  learning_rate:
+    type: "log_uniform"
+    low: 1.0e-5
+    high: 1.0e-3
+
+  batch_size:
+    type: "categorical"
+    values: [32, 64, 128, 256]
+
+  gamma:
+    type: "uniform"
+    low: 0.95
+    high: 0.999
+
+  hidden_size:
+    type: "categorical"
+    values: [128, 256, 512]
+
+  num_layers:
+    type: "int_uniform"
+    low: 2
+    high: 4
+
+  clip_range: # PPO
+    type: "uniform"
+    low: 0.1
+    high: 0.3
+
+  tau: # DDPG/SAC/TD3
+    type: "log_uniform"
+    low: 0.001
+    high: 0.01
+
+  ent_coef:
+    type: "log_uniform"
+    low: 1.0e-4
+    high: 0.1
+
+# Early stopping
+early_stopping:
+  enabled: true
+  metric: "eval_mean_reward" # eval_mean_reward, eval_sharpe
+  patience: 50 # evaluation cycles
+  min_delta: 0.01 # minimum improvement
+  mode: "max" # max, min

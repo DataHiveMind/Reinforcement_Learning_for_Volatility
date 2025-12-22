@@ -1,0 +1,315 @@
+# DDPG Training Configuration for Microstructure Features
+# Deep Deterministic Policy Gradient with market microstructure signals
+
+experiment:
+  name: "ddpg_microstructure_v1"
+  description: "DDPG agent using order-book and trade-flow features for volatility allocation"
+  tags: ["ddpg", "microstructure", "volatility", "continuous-control"]
+  output_dir: "experiments/ddpg_microstructure/"
+
+# Import base hyperparameters
+base_config: "configs/trainings/hyperparams.yaml"
+
+# Algorithm
+algorithm:
+  type: "DDPG"
+  policy_type: "MlpPolicy"
+
+# Environment
+environment:
+  config: "configs/env/volatility_env.yaml"
+  n_envs: 1 # DDPG typically uses single environment
+
+  # Environment wrappers
+  wrappers:
+    - type: "NormalizeObservation"
+      enabled: true
+    - type: "NormalizeReward"
+      enabled: false # often disabled for off-policy
+    - type: "TimeFeatureWrapper"
+      enabled: true
+    - type: "RecordEpisodeStatistics"
+      enabled: true
+
+# Feature configuration
+features:
+  microstructure:
+    enabled: true
+    config: "configs/data/mircostructure_features.yaml"
+
+  options:
+    enabled: false # focus on microstructure only
+
+  unstructured:
+    enabled: false
+
+  # Feature preprocessing
+  preprocessing:
+    scaler: "robust"
+    handle_nan: "forward_fill"
+    outlier_clip: 3.0
+
+# DDPG Hyperparameters (override base config)
+ddpg:
+  # Learning rates
+  actor_lr: 1.0e-4
+  critic_lr: 1.0e-3
+  lr_schedule: "constant"
+
+  # Training dynamics
+  total_timesteps: 1000000
+  buffer_size: 1000000
+  learning_starts: 10000 # random exploration phase
+  batch_size: 256
+  tau: 0.005 # soft update coefficient
+  gamma: 0.99 # discount factor
+
+  # Training frequency
+  train_freq: 1 # update every step
+  gradient_steps: 1 # gradient steps per update
+
+  # Exploration noise
+  action_noise:
+    type: "ornstein_uhlenbeck"
+    mean: 0.0
+    theta: 0.15
+    sigma: 0.2
+    dt: 0.01
+
+  # Target network update
+  target_update_interval: 1 # soft update every step
+
+  # Optimizer
+  optimizer_class: "Adam"
+  optimizer_kwargs:
+    eps: 1.0e-5
+    weight_decay: 0.0001
+
+# Network architecture
+network:
+  # Actor network
+  actor:
+    net_arch: [400, 300] # common DDPG architecture
+    activation_fn: "relu"
+    output_activation: "tanh"
+    dropout: 0.0
+    layer_norm: false
+    batch_norm: false
+
+  # Critic network
+  critic:
+    net_arch: [400, 300]
+    activation_fn: "relu"
+    dropout: 0.0
+    layer_norm: false
+    batch_norm: false
+
+  # Initialization
+  weight_init: "xavier_uniform"
+  bias_init: "zeros"
+
+  # Advanced options
+  use_layer_norm: false
+  critic_l2_reg: 0.01
+
+# Replay buffer
+replay_buffer:
+  type: "ReplayBuffer" # standard uniform sampling
+
+  # Prioritized replay (optional)
+  prioritized:
+    enabled: false
+    alpha: 0.6
+    beta: 0.4
+    beta_schedule: "linear"
+
+  # Buffer optimization
+  optimize_memory_usage: false
+  handle_timeout_termination: true
+
+# Training schedule
+training:
+  total_timesteps: 1000000
+
+  # Warmup phase
+  warmup:
+    enabled: true
+    random_steps: 10000 # pure random exploration
+
+  # Noise schedule
+  noise_schedule:
+    type: "linear_decay"
+    initial_sigma: 0.2
+    final_sigma: 0.05
+    decay_steps: 500000
+
+  # Learning rate schedule (optional)
+  lr_schedule:
+    enabled: false
+    type: "exponential"
+    decay_rate: 0.995
+    decay_steps: 10000
+
+# Evaluation
+evaluation:
+  enabled: true
+  n_eval_episodes: 10
+  eval_freq: 10000
+  deterministic: true
+  render: false
+
+  # Evaluation without noise
+  eval_noise: false
+
+  # Separate evaluation environment
+  separate_eval_env: true
+  eval_env_config:
+    data_split: "validation"
+
+# Callbacks
+callbacks:
+  # Checkpoint saving
+  checkpoint:
+    enabled: true
+    save_freq: 50000
+    save_path: "checkpoints/"
+    name_prefix: "ddpg_microstructure"
+    save_replay_buffer: true # save replay buffer for off-policy
+
+  # Evaluation callback
+  eval_callback:
+    enabled: true
+    best_model_save_path: "best_model/"
+    log_path: "eval_logs/"
+    deterministic: true
+
+  # Early stopping
+  early_stopping:
+    enabled: true
+    patience: 30 # more patience for DDPG
+    min_delta: 0.01
+    metric: "eval/mean_reward"
+
+  # Tensorboard
+  tensorboard:
+    enabled: true
+    log_dir: "logs/tensorboard/"
+
+  # Action noise scheduler
+  action_noise_scheduler:
+    enabled: true
+    log_freq: 1000
+
+  # Custom metrics
+  custom_metrics:
+    enabled: true
+    metrics:
+      - sharpe_ratio
+      - max_drawdown
+      - win_rate
+      - turnover
+      - volatility_forecast_mae
+      - action_entropy # monitor exploration
+      - critic_loss
+      - actor_loss
+    log_freq: 1000
+
+# Logging
+logging:
+  verbose: 1
+  log_interval: 10
+
+  # Wandb
+  wandb:
+    enabled: false
+    project: "rl-volatility-alpha"
+    name: "ddpg_microstructure_v1"
+    tags: ["ddpg", "microstructure", "continuous-control"]
+
+  # MLflow
+  mlflow:
+    enabled: false
+    experiment_name: "volatility_trading"
+    run_name: "ddpg_microstructure_v1"
+
+# Reproducibility
+reproducibility:
+  seed: 42
+  deterministic_pytorch: false
+  benchmark: true
+
+# Performance optimization
+performance:
+  # GPU acceleration
+  device: "cuda"
+
+  # Mixed precision
+  mixed_precision:
+    enabled: false
+
+  # Compilation
+  compile:
+    enabled: false
+
+# Debugging
+debug:
+  enabled: false
+  check_finite: true
+  gradient_clipping:
+    enabled: true
+    max_norm: 10.0
+  profile: false
+  log_gradients: false
+
+# Advanced DDPG features
+advanced:
+  # Twin critics (TD3-style, optional)
+  twin_critics:
+    enabled: false
+
+  # Delayed policy updates (TD3-style, optional)
+  policy_delay:
+    enabled: false
+    delay: 2
+
+  # Target policy smoothing (TD3-style, optional)
+  target_policy_noise:
+    enabled: false
+    noise_clip: 0.5
+    noise_std: 0.2
+
+# Model export
+export:
+  enabled: true
+  format: "onnx"
+  path: "models/exported/"
+  export_actor_only: false # export both actor and critic
+
+# Post-training analysis
+analysis:
+  enabled: true
+
+  # Backtest
+  backtest:
+    enabled: true
+    data_split: "test"
+    save_results: true
+    plot_results: true
+
+  # Feature importance
+  feature_importance:
+    enabled: true
+    method: "permutation"
+
+  # Policy visualization
+  policy_viz:
+    enabled: true
+    num_episodes: 5
+    plot_actions: true
+    plot_q_values: true
+
+  # Replay buffer analysis
+  buffer_analysis:
+    enabled: true
+    plot_transitions: true
+    analyze_coverage: true
