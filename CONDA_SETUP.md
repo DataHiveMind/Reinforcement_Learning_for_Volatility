@@ -46,7 +46,7 @@ After creating the environment, restart VS Code or reload the window (Cmd/Ctrl +
 conda env update -f environment.yml --prune
 ```
 
-### Export current environmen
+### Export current environment
 
 ```bash
 conda env export > environment.yml

@@ -1,0 +1,103 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Virtual environments
+.venv/
+venv/
+ENV/
+env/
+.env
+
+# Jupyter Notebook
+.ipynb_checkpoints
+*.ipynb_checkpoints/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Testing
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+.tox/
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# Data files (keep structure, ignore data)
+# ArcticDB - entire database directory (too large for git)
+arcticdb/
+!arcticdb/.gitkeep
+
+# Other data formats
+*.h5
+*.hdf5
+*.parquet
+*.pkl
+*.pickle
+
+# Experiment outputs
+experiments/
+mlruns/
+outputs/
+logs/
+*.log
+
+# Reports (keep structure, ignore generated files)
+reports/figures/*.html
+reports/figures/*.png
+reports/figures/*.jpg
+reports/figures/*.pdf
+reports/data_quality/*.txt
+reports/data_quality/*.csv
+reports/backtest_results/*.csv
+reports/backtest_results/*.html
+reports/backtest_results/*.png
+reports/model_evaluations/*.csv
+reports/model_evaluations/*.png
+reports/model_evaluations/*.html
+!reports/README.md
+
+# Keep directory structure
+!reports/.gitkeep
+!reports/figures/.gitkeep
+!reports/data_quality/.gitkeep
+!reports/backtest_results/.gitkeep
+!reports/model_evaluations/.gitkeep
+
+# Models
+*.pth
+*.pt
+*.ckpt
+models/*.zip
+checkpoints/
+
+# OS
+.DS_Store
+Thumbs.db

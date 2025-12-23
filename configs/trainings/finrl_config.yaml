@@ -1,0 +1,101 @@
+# FinRL Training Configuration
+
+# Model Configuration
+model:
+  name: "ppo" # Options: ppo, a2c, ddpg, td3, sac
+  policy: "MlpPolicy"
+
+# Training Parameters
+training:
+  total_timesteps: 100000
+  eval_freq: 10000
+  n_eval_episodes: 5
+  save_freq: 10000
+
+# PPO Hyperparameters
+ppo:
+  learning_rate: 0.0003
+  n_steps: 2048
+  batch_size: 64
+  n_epochs: 10
+  gamma: 0.99
+  gae_lambda: 0.95
+  clip_range: 0.2
+  clip_range_vf: null
+  ent_coef: 0.01
+  vf_coef: 0.5
+  max_grad_norm: 0.5
+  use_sde: false
+  sde_sample_freq: -1
+
+# A2C Hyperparameters
+a2c:
+  learning_rate: 0.0007
+  n_steps: 5
+  gamma: 0.99
+  gae_lambda: 1.0
+  ent_coef: 0.01
+  vf_coef: 0.5
+  max_grad_norm: 0.5
+  rms_prop_eps: 0.00001
+  use_rms_prop: true
+  use_sde: false
+  normalize_advantage: false
+
+# SAC Hyperparameters
+sac:
+  learning_rate: 0.0003
+  buffer_size: 100000
+  learning_starts: 100
+  batch_size: 256
+  tau: 0.005
+  gamma: 0.99
+  train_freq: 1
+  gradient_steps: 1
+  ent_coef: "auto"
+  target_update_interval: 1
+  target_entropy: "auto"
+  use_sde: false
+  use_sde_at_warmup: false
+
+# DDPG Hyperparameters
+ddpg:
+  learning_rate: 0.001
+  buffer_size: 100000
+  learning_starts: 100
+  batch_size: 100
+  tau: 0.005
+  gamma: 0.99
+  train_freq: 1
+  gradient_steps: -1
+  action_noise: "OrnsteinUhlenbeck"
+
+# TD3 Hyperparameters
+td3:
+  learning_rate: 0.001
+  buffer_size: 100000
+  learning_starts: 100
+  batch_size: 100
+  tau: 0.005
+  gamma: 0.99
+  train_freq: 1
+  gradient_steps: -1
+  action_noise: "Normal"
+  policy_delay: 2
+  target_policy_noise: 0.2
+  target_noise_clip: 0.5
+
+# Ensemble Configuration
+ensemble:
+  models: ["ppo", "a2c", "sac"]
+  voting_method: "averaging" # Options: averaging, voting, weighted
+
+# Logging
+logging:
+  tensorboard_log: "./tensorboard_logs/finrl"
+  verbose: 1
+
+# Model Saving
+save:
+  path: "./models/finrl"
+  format: "zip" # stable-baselines3 default format

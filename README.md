@@ -2,6 +2,10 @@
 
 RL‑Driven Volatility Forecasting and Allocation Using Market Microstructure & Unstructured Data
 
+> **🆕 Now with FinRL Integration!** - Advanced financial RL library with pre-built agents, ensemble methods, and optimization tools. See [FINRL_INTEGRATION.md](docs/FINRL_INTEGRATION.md) for details.
+>
+> **📊 Data Source**: Uses Yahoo Finance (yfinance) for reliable, free equities data.
+
 ## 📌 Overview
 
 This project develops a reinforcement learning framework for capturing short‑horizon volatility alpha using:
@@ -32,6 +36,7 @@ python -m ipykernel install --user --name=rl-volatility --display-name="Python (
 ```
 
 Or use the setup script:
+
 ```bash
 ./setup_env.sh
 ```
@@ -46,6 +51,7 @@ pip install -e ".[all]"
 ### 3. VS Code Setup
 
 The workspace is pre-configured to use the `rl-volatility` conda environment. After creating the environment:
+
 - Reload VS Code window (Cmd/Ctrl + Shift + P → "Developer: Reload Window")
 - Jupyter notebooks will automatically use the correct kernel
 
@@ -160,9 +166,11 @@ rl-volatility-alpha/
 5. RL Agents
     - Implemented agents:
 
-    - PPO (stable, robust for noisy signals)
+    - **PPO** (stable, robust for noisy signals)
 
-    - DDPG (continuous action space for allocation weights)
+    - **DDPG** (continuous action space for allocation weights)
+
+    - **FinRL Integration** 🆕 (PPO, A2C, SAC, TD3, DDPG + ensembles)
 
     - Optional: SAC, TD3
 
