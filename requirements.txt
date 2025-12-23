@@ -31,6 +31,8 @@ arcticdb>=4.0.0,<5.0.0
 
 # Financial Data & Analysis
 # ========================================
+openbb>=4.0.0
+openbb-core>=1.0.0
 yfinance>=0.2.0
 pandas-ta>=0.3.14b
 ta>=0.11.0

@@ -98,6 +98,41 @@ The goal is to build an RL agent that allocates capital across volatility strate
 
 This project is designed to mirror the research workflows used at top quant funds and PhD‑level ML labs.
 
+## 🚀 Quick Start
+
+### 1. Create Conda Environment
+
+```bash
+# Create the environment
+conda env create -f environment.yml
+
+# Activate the environment
+conda activate rl-volatility
+
+# Register Jupyter kernel
+python -m ipykernel install --user --name=rl-volatility --display-name="Python (RL-Volatility)"
+```
+
+Or use the setup script:
+```bash
+./setup_env.sh
+```
+
+### 2. Install Project
+
+```bash
+# Install in development mode
+pip install -e ".[all]"
+```
+
+### 3. VS Code Setup
+
+The workspace is pre-configured to use the `rl-volatility` conda environment. After creating the environment:
+- Reload VS Code window (Cmd/Ctrl + Shift + P → "Developer: Reload Window")
+- Jupyter notebooks will automatically use the correct kernel
+
+See [CONDA_SETUP.md](CONDA_SETUP.md) for detailed instructions.
+
 ## 🎯 Research Objectives
 
 Build a custom RL environment that simulates volatility dynamics using microstructure + options data

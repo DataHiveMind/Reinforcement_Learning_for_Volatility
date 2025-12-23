@@ -70,6 +70,8 @@ dependencies:
   # pip-only packages (not available in conda)
   - pip
   - pip:
+    - openbb>=4.0.0
+    - openbb-core>=1.0.0
     - arcticdb>=4.0.0
     - ta-lib>=0.4.28
     - arch>=6.2.0

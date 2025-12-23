@@ -4,11 +4,12 @@ Data loading utilities for market data.
 Supports loading from multiple sources:
 - Local files (CSV, Parquet, HDF5)
 - ArcticDB for high-performance time-series storage
-- Market data APIs (Yahoo Finance, etc.)
+- Market data APIs (Yahoo Finance, OpenBB Terminal, etc.)
+- Real-time order book data via OpenBB
 """
 
 import logging
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Dict, List, Optional, Union
 
@@ -355,6 +356,20 @@ class MarketDataLoader(DataLoader):
 
     def __init__(self, data_dir: Union[str, Path] = "data/"):
         super().__init__(data_dir)
+        self._openbb_initialized = False
+        self._obb = None
+
+    def _init_openbb(self):
+        """Initialize OpenBB Terminal connection."""
+        if not self._openbb_initialized:
+            try:
+                from openbb import obb
+
+                self._obb = obb
+                self._openbb_initialized = True
+                logger.info("OpenBB Terminal initialized successfully")
+            except ImportError:
+                raise ImportError("OpenBB is required. Install with: pip install openbb")
 
     def load_yahoo_finance(
         self,
@@ -387,6 +402,196 @@ class MarketDataLoader(DataLoader):
 
         logger.info(f"Downloaded {len(df)} rows")
         return df
+
+    def load_openbb_historical(
+        self,
+        symbol: str,
+        start: Optional[str] = None,
+        end: Optional[str] = None,
+        provider: str = "yfinance",
+        interval: str = "1d",
+    ) -> pd.DataFrame:
+        """
+        Load historical price data using OpenBB Terminal.
+
+        Args:
+            symbol: Stock ticker symbol
+            start: Start date (YYYY-MM-DD). Defaults to 1 year ago
+            end: End date (YYYY-MM-DD). Defaults to today
+            provider: Data provider (yfinance, polygon, alpha_vantage, etc.)
+            interval: Data interval (1d, 1h, 1m, etc.)
+
+        Returns:
+            DataFrame with OHLCV data
+        """
+        self._init_openbb()
+
+        if start is None:
+            start = (datetime.now() - timedelta(days=365)).strftime("%Y-%m-%d")
+        if end is None:
+            end = datetime.now().strftime("%Y-%m-%d")
+
+        logger.info(f"Loading {symbol} from OpenBB ({provider}): " f"{start} to {end}")
+
+        # Use OpenBB's equity historical price endpoint
+        if self._obb is None:
+            raise RuntimeError("OpenBB not initialized")
+
+        result = self._obb.equity.price.historical(
+            symbol=symbol,
+            start_date=start,
+            end_date=end,
+            interval=interval,
+            provider=provider,
+        )
+
+        df = result.to_df()
+        logger.info(f"Downloaded {len(df)} rows")
+        return df
+
+    def load_openbb_orderbook(
+        self,
+        symbol: str,
+        provider: str = "polygon",
+        exchange: Optional[str] = None,
+    ) -> pd.DataFrame:
+        """
+        Load real-time order book data using OpenBB Terminal.
+
+        Args:
+            symbol: Stock ticker symbol
+            provider: Data provider (polygon, cboe, etc.)
+            exchange: Specific exchange (optional)
+
+        Returns:
+            DataFrame with order book snapshot
+        """
+        self._init_openbb()
+        if self._obb is None:
+            raise RuntimeError("OpenBB not initialized")
+
+        logger.info(f"Loading order book for {symbol} from OpenBB ({provider})")
+
+        try:
+            # Try to get level 2 order book data
+            if provider == "polygon":
+                result = self._obb.equity.market.depth(
+                    symbol=symbol,
+                    provider=provider,
+                )
+            else:
+                # Fallback to quote data if order book not available
+                result = self._obb.equity.price.quote(
+                    symbol=symbol,
+                    provider=provider,
+                )
+
+            df = result.to_df()
+
+            # Add timestamp if not present
+            if "timestamp" not in df.columns:
+                df["timestamp"] = pd.Timestamp.now()
+
+            logger.info(f"Retrieved order book snapshot with {len(df)} entries")
+            return df
+
+        except Exception as e:
+            logger.error(f"Failed to load order book: {e}")
+            logger.info("Falling back to quote data")
+
+            # Fallback to basic quote
+            result = self._obb.equity.price.quote(
+                symbol=symbol,
+                provider="yfinance",
+            )
+            df = result.to_df()
+
+            if "timestamp" not in df.columns:
+                df["timestamp"] = pd.Timestamp.now()
+
+            return df
+
+    def load_openbb_options(
+        self,
+        symbol: str,
+        provider: str = "cboe",
+        expiration: Optional[str] = None,
+    ) -> pd.DataFrame:
+        """
+        Load options data using OpenBB Terminal.
+
+        Args:
+            symbol: Underlying stock ticker
+            provider: Data provider (cboe, tradier, intrinio, etc.)
+            expiration: Specific expiration date (YYYY-MM-DD)
+
+        Returns:
+            DataFrame with options chain data
+        """
+        self._init_openbb()
+        if self._obb is None:
+            raise RuntimeError("OpenBB not initialized")
+
+        logger.info(f"Loading options data for {symbol} from OpenBB ({provider})")
+
+        try:
+            # Get options chains
+            result = self._obb.derivatives.options.chains(
+                symbol=symbol,
+                provider=provider,
+            )
+
+            df = result.to_df()
+
+            # Filter by expiration if specified
+            if expiration and "expiration" in df.columns:
+                df = df[df["expiration"] == expiration]
+
+            logger.info(f"Retrieved {len(df)} options contracts")
+            return df
+
+        except Exception as e:
+            logger.error(f"Failed to load options data: {e}")
+            raise
+
+    def load_openbb_greeks(
+        self,
+        symbol: str,
+        provider: str = "cboe",
+        expiration: Optional[str] = None,
+    ) -> pd.DataFrame:
+        """
+        Load options Greeks using OpenBB Terminal.
+
+        Args:
+            symbol: Underlying stock ticker
+            provider: Data provider
+            expiration: Specific expiration date (YYYY-MM-DD)
+
+        Returns:
+            DataFrame with options Greeks data
+        """
+        self._init_openbb()
+
+        logger.info(f"Loading Greeks for {symbol} from OpenBB ({provider})")
+
+        # Load full options chain
+        df = self.load_openbb_options(symbol, provider, expiration)
+
+        # Filter for columns containing Greeks
+        greeks = ["delta", "gamma", "vega", "theta", "rho", "iv"]
+        greek_cols = [col for col in df.columns if any(greek in col.lower() for greek in greeks)]
+
+        if greek_cols:
+            if "timestamp" in df.columns:
+                result_df = df[["timestamp"] + greek_cols]
+            else:
+                result_df = df[greek_cols]
+            logger.info(f"Retrieved Greeks data with {len(result_df)} rows")
+            return result_df
+        else:
+            logger.warning("No Greeks columns found in options data")
+            return df
 
     def load_orderbook_snapshot(
         self,
@@ -452,7 +657,7 @@ class MarketDataLoader(DataLoader):
             # Simple tick rule
             price_diff = df["price"].diff()
             df["direction"] = np.sign(price_diff)
-            # Use forward fill (fillna method parameter is deprecated in pandas 2.0+)
+            # Use forward fill (deprecated fillna method)
             df.loc[df["direction"] == 0, "direction"] = np.nan
             df["direction"] = df["direction"].ffill()
 

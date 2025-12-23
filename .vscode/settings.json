@@ -1,6 +1,6 @@
 {
   // Python Environment
-  "python-envs.defaultEnvManager": "ms-python.python:conda",
+  "python-envs.defaultEnvManager": "ms-python.python:system",
   "python-envs.pythonProjects": [],
   "python.defaultInterpreterPath": "${env:CONDA_PREFIX}/bin/python",
   "python.condaPath": "conda",
